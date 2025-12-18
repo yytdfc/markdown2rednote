@@ -11,6 +11,16 @@ interface PageConfig {
   pageWidth: number
   pageHeight: number
   theme: 'light' | 'dark' | 'sepia' | 'pink'
+  showPageNumber: boolean
+  pageNumberPosition: 'bottom-center' | 'bottom-right' | 'bottom-left'
+  showRunningHeader: boolean
+  preventWidowsOrphans: boolean
+  dropCap: boolean
+  coverFontFamily: string
+  coverFontSize: number
+  coverColor: string
+  exportScale: number
+  exportFormat: 'png' | 'jpeg' | 'webp'
 }
 
 const defaultConfig: PageConfig = {
@@ -21,6 +31,16 @@ const defaultConfig: PageConfig = {
   pageWidth: 400,
   pageHeight: 600,
   theme: 'light',
+  showPageNumber: false,
+  pageNumberPosition: 'bottom-center',
+  showRunningHeader: false,
+  preventWidowsOrphans: true,
+  dropCap: false,
+  coverFontFamily: 'Source Han Serif SC VF',
+  coverFontSize: 36,
+  coverColor: '#e74c3c',
+  exportScale: 2,
+  exportFormat: 'png',
 }
 
 const themes = {
@@ -33,10 +53,7 @@ const themes = {
 const fontOptions = [
   'PingFang SC',
   'Microsoft YaHei',
-  'Noto Sans SC',
-  'Source Han Sans CN',
-  'Source Han Serif CN',
-  'Noto Serif SC',
+  'Source Han Serif SC VF',
   'Helvetica Neue',
   'Arial',
   'Georgia',
@@ -91,7 +108,10 @@ function App() {
   })
   const [isRendering, setIsRendering] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [configCollapsed, setConfigCollapsed] = useState(false)
+  const [configWidth, setConfigWidth] = useState(280)
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const dragStateRef = useRef<{ startX: number; startWidth: number } | null>(null)
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
@@ -99,22 +119,86 @@ function App() {
 
   const generateStyles = useCallback((cfg: PageConfig) => {
     const theme = themes[cfg.theme]
+    
+    const pageNumberContent = `counter(page) " / " counter(pages)`
+    const pageNumberStyle = cfg.showPageNumber ? `
+      @${cfg.pageNumberPosition} {
+        content: ${pageNumberContent};
+        font-size: ${cfg.fontSize * 0.75}px;
+        color: ${theme.quote};
+      }` : ''
+    
+    const runningHeaderStyle = cfg.showRunningHeader ? `
+      @top-center {
+        content: string(chapter-title);
+        font-size: ${cfg.fontSize * 0.75}px;
+        color: ${theme.quote};
+      }` : ''
+    
+    const widowsOrphansStyle = cfg.preventWidowsOrphans ? `
+p { widows: 2; orphans: 2; }` : ''
+    
+    const dropCapStyle = cfg.dropCap ? `
+.content > p:first-of-type::first-letter {
+  float: left;
+  font-size: ${cfg.fontSize * 3}px;
+  line-height: 1;
+  padding-right: 8px;
+  padding-top: 4px;
+  font-weight: bold;
+  color: ${theme.accent};
+}` : ''
+
+    const runningHeaderSet = cfg.showRunningHeader ? `
+h2 { string-set: chapter-title content(text); }` : ''
+
     return `
 @page {
   size: ${cfg.pageWidth}px ${cfg.pageHeight}px;
   margin: ${cfg.pageMargin}px;
+  ${pageNumberStyle}
+  ${runningHeaderStyle}
 }
 body {
-  font-family: "${cfg.fontFamily}", "Noto Serif SC", "Noto Sans SC", sans-serif;
+  font-family: "${cfg.fontFamily}", "Source Han Serif SC VF", "PingFang SC", sans-serif;
   font-size: ${cfg.fontSize}px;
   line-height: ${cfg.lineHeight};
   color: ${theme.text};
   background: ${theme.bg};
 }
+/* Cover page - use named page */
+.cover {
+  page: cover;
+  break-after: page;
+}
+@page cover {
+  size: ${cfg.pageWidth}px ${cfg.pageHeight}px;
+  margin: 0;
+  @top-center { content: none; }
+  @bottom-left { content: none; }
+  @bottom-center { content: none; }
+  @bottom-right { content: none; }
+}
+.cover h1 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: ${cfg.pageHeight}px;
+  font-family: "${cfg.coverFontFamily}", "Source Han Serif SC VF", "PingFang SC", sans-serif;
+  font-size: ${cfg.coverFontSize}px;
+  font-weight: bold;
+  color: ${cfg.coverColor};
+  line-height: 1.4;
+  text-align: center;
+  margin: 0;
+  padding: ${cfg.pageMargin}px;
+  box-sizing: border-box;
+}
 h1 { font-size: ${cfg.fontSize * 1.75}px; color: ${theme.accent}; break-after: avoid; margin-top: 0; }
-h2 { font-size: ${cfg.fontSize * 1.375}px; color: ${theme.text}; break-after: avoid; margin-top: 1.5em; }
+h2 { font-size: ${cfg.fontSize * 1.375}px; color: ${theme.text}; break-after: avoid; margin-top: 1.5em; ${runningHeaderSet} }
 h3 { font-size: ${cfg.fontSize * 1.125}px; color: ${theme.text}; break-after: avoid; }
 p { margin-bottom: 1em; text-align: justify; }
+${widowsOrphansStyle}
 ul, ol { margin: 1em 0; padding-left: 2em; }
 li { margin-bottom: 0.5em; break-inside: avoid; }
 blockquote {
@@ -141,6 +225,8 @@ code {
   font-size: ${cfg.fontSize * 0.875}px;
 }
 pre code { background: none; padding: 0; }
+.page-break { break-after: page; }
+${dropCapStyle}
 `
   }, [])
 
@@ -150,7 +236,14 @@ pre code { background: none; padding: 0; }
     const renderPaged = async () => {
       setIsRendering(true)
       
-      const htmlContent = marked.parse(markdown) as string
+      let htmlContent = marked.parse(markdown) as string
+      // Wrap first h1 in a cover section
+      htmlContent = htmlContent.replace(/<h1>(.*?)<\/h1>/, '<section class="cover"><h1>$1</h1></section>')
+      // Convert <hr> to page break
+      htmlContent = htmlContent.replace(/<hr\s*\/?>/g, '<div class="page-break"></div>')
+      // Wrap remaining content for drop cap styling
+      const coverEnd = htmlContent.indexOf('</section>') + 10
+      htmlContent = htmlContent.slice(0, coverEnd) + '<div class="content">' + htmlContent.slice(coverEnd) + '</div>'
       const oldIframe = iframeRef.current
       if (!oldIframe?.parentNode) return
 
@@ -166,11 +259,7 @@ pre code { background: none; padding: 0; }
       const theme = themes[config.theme]
       const styles = generateStyles(config)
 
-      const fontLink = config.fontFamily.includes('Serif') || config.fontFamily.includes('宋')
-        ? '<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">'
-        : config.fontFamily.includes('Noto Sans') || config.fontFamily.includes('Source Han Sans')
-        ? '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">'
-        : ''
+
 
       iframeDoc.open()
       iframeDoc.write(`
@@ -178,7 +267,6 @@ pre code { background: none; padding: 0; }
         <html>
         <head>
           <meta charset="UTF-8">
-          ${fontLink}
           <style>${styles}</style>
           <style>
             .pagedjs_pages {
@@ -223,7 +311,7 @@ pre code { background: none; padding: 0; }
     return () => window.removeEventListener('message', handleMessage)
   }, [])
 
-  const updateConfig = (key: keyof PageConfig, value: string | number) => {
+  const updateConfig = (key: keyof PageConfig, value: string | number | boolean) => {
     setConfig(prev => ({ ...prev, [key]: value }))
   }
 
@@ -286,17 +374,19 @@ pre code { background: none; padding: 0; }
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i] as HTMLElement
         const canvas = await html2canvas(page, {
-          scale: 2,
+          scale: config.exportScale,
           useCORS: true,
           allowTaint: true,
           backgroundColor: null,
         })
         
+        const mimeType = `image/${config.exportFormat}`
+        const quality = config.exportFormat === 'png' ? undefined : 0.92
         const blob = await new Promise<Blob>((resolve) => 
-          canvas.toBlob((b) => resolve(b!), 'image/png')
+          canvas.toBlob((b) => resolve(b!), mimeType, quality)
         )
         
-        const fileName = `page-${String(i + 1).padStart(2, '0')}.png`
+        const fileName = `page-${String(i + 1).padStart(2, '0')}.${config.exportFormat}`
         const fileHandle = await subDirHandle.getFileHandle(fileName, { create: true })
         const writable = await fileHandle.createWritable()
         await writable.write(blob)
@@ -316,75 +406,216 @@ pre code { background: none; padding: 0; }
     setIsExporting(false)
   }
 
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!dragStateRef.current) return
+      const deltaX = e.clientX - dragStateRef.current.startX
+      const newWidth = Math.max(200, Math.min(400, dragStateRef.current.startWidth + deltaX))
+      setConfigWidth(newWidth)
+    }
+
+    const onMouseUp = () => {
+      if (dragStateRef.current) {
+        dragStateRef.current = null
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+      }
+    }
+
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+    
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [])
+
+  const handleConfigResize = (e: React.MouseEvent) => {
+    e.preventDefault()
+    dragStateRef.current = { startX: e.clientX, startWidth: configWidth }
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+  }
+
   return (
     <div className="app">
-      <div className="left-panel">
-        <div className="config-panel">
-          <h3>页面配置</h3>
-          <div className="config-grid">
-            <label>
-              字体
-              <select value={config.fontFamily} onChange={e => updateConfig('fontFamily', e.target.value)}>
-                {fontOptions.map(f => <option key={f} value={f}>{f}</option>)}
-              </select>
-            </label>
-            <label>
-              字号
-              <input type="number" value={config.fontSize} min={12} max={24} 
-                onChange={e => updateConfig('fontSize', +e.target.value)} />
-            </label>
-            <label>
-              行高
-              <input type="number" value={config.lineHeight} min={1.2} max={2.5} step={0.1}
-                onChange={e => updateConfig('lineHeight', +e.target.value)} />
-            </label>
-            <label>
-              页边距
-              <input type="number" value={config.pageMargin} min={20} max={80}
-                onChange={e => updateConfig('pageMargin', +e.target.value)} />
-            </label>
-            <label>
-              页宽
-              <input type="number" value={config.pageWidth} min={300} max={800}
-                onChange={e => updateConfig('pageWidth', +e.target.value)} />
-            </label>
-            <label>
-              页高
-              <input type="number" value={config.pageHeight} min={400} max={1000}
-                onChange={e => updateConfig('pageHeight', +e.target.value)} />
-            </label>
-            <label>
-              主题
-              <select value={config.theme} onChange={e => updateConfig('theme', e.target.value)}>
-                <option value="light">浅色</option>
-                <option value="dark">深色</option>
-                <option value="sepia">复古</option>
-                <option value="pink">粉色</option>
-              </select>
-            </label>
-          </div>
-          <div className="config-actions">
-            <button onClick={resetConfig}>重置</button>
-            <button onClick={exportConfig}>导出配置</button>
-            <button onClick={importConfig}>导入配置</button>
-            <button onClick={exportImages} disabled={isRendering || isExporting} className="export-btn">
-              {isExporting ? '导出中...' : '导出图片'}
-            </button>
-          </div>
+      {/* Config Panel */}
+      <div className={`config-panel ${configCollapsed ? 'collapsed' : ''}`} style={{ width: configCollapsed ? 48 : configWidth }}>
+        <div className="panel-header">
+          <button className="collapse-btn" onClick={() => setConfigCollapsed(!configCollapsed)}>
+            {configCollapsed ? '▶' : '◀'}
+          </button>
+          {!configCollapsed && <span>配置</span>}
         </div>
+        {!configCollapsed && (
+          <div className="config-content">
+            <div className="config-section">
+              <h4>封面标题</h4>
+              <div className="config-row">
+                <label>
+                  字体
+                  <select value={config.coverFontFamily} onChange={e => updateConfig('coverFontFamily', e.target.value)}>
+                    {fontOptions.map(f => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                </label>
+                <label>
+                  字号
+                  <input type="number" value={config.coverFontSize} min={20} max={72} 
+                    onChange={e => updateConfig('coverFontSize', +e.target.value)} />
+                </label>
+                <label>
+                  颜色
+                  <input type="color" value={config.coverColor} 
+                    onChange={e => updateConfig('coverColor', e.target.value)} />
+                </label>
+              </div>
+            </div>
+
+            <div className="config-section">
+              <h4>正文样式</h4>
+              <div className="config-row">
+                <label>
+                  字体
+                  <select value={config.fontFamily} onChange={e => updateConfig('fontFamily', e.target.value)}>
+                    {fontOptions.map(f => <option key={f} value={f}>{f}</option>)}
+                  </select>
+                </label>
+                <label>
+                  字号
+                  <input type="number" value={config.fontSize} min={12} max={24} 
+                    onChange={e => updateConfig('fontSize', +e.target.value)} />
+                </label>
+              </div>
+              <div className="config-row">
+                <label>
+                  行高
+                  <input type="number" value={config.lineHeight} min={1.2} max={2.5} step={0.1}
+                    onChange={e => updateConfig('lineHeight', +e.target.value)} />
+                </label>
+                <label>
+                  主题
+                  <select value={config.theme} onChange={e => updateConfig('theme', e.target.value)}>
+                    <option value="light">浅色</option>
+                    <option value="dark">深色</option>
+                    <option value="sepia">复古</option>
+                    <option value="pink">粉色</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div className="config-section">
+              <h4>页面尺寸</h4>
+              <div className="config-row">
+                <label>
+                  宽度
+                  <input type="number" value={config.pageWidth} min={300} max={800}
+                    onChange={e => updateConfig('pageWidth', +e.target.value)} />
+                </label>
+                <label>
+                  高度
+                  <input type="number" value={config.pageHeight} min={400} max={1000}
+                    onChange={e => updateConfig('pageHeight', +e.target.value)} />
+                </label>
+                <label>
+                  边距
+                  <input type="number" value={config.pageMargin} min={20} max={80}
+                    onChange={e => updateConfig('pageMargin', +e.target.value)} />
+                </label>
+              </div>
+            </div>
+
+            <div className="config-section">
+              <h4>排版选项</h4>
+              <div className="config-checkboxes">
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={config.showPageNumber} 
+                    onChange={e => updateConfig('showPageNumber', e.target.checked)} />
+                  页码
+                  {config.showPageNumber && (
+                    <select value={config.pageNumberPosition} onChange={e => updateConfig('pageNumberPosition', e.target.value)} className="inline-select">
+                      <option value="bottom-center">居中</option>
+                      <option value="bottom-right">右下</option>
+                      <option value="bottom-left">左下</option>
+                    </select>
+                  )}
+                </label>
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={config.showRunningHeader} onChange={e => updateConfig('showRunningHeader', e.target.checked)} />
+                  章节标题
+                </label>
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={config.preventWidowsOrphans} onChange={e => updateConfig('preventWidowsOrphans', e.target.checked)} />
+                  防孤行
+                </label>
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={config.dropCap} onChange={e => updateConfig('dropCap', e.target.checked)} />
+                  首字下沉
+                </label>
+              </div>
+            </div>
+
+            <div className="config-actions">
+              <div className="action-row">
+                <button onClick={resetConfig}>重置</button>
+                <button onClick={exportConfig}>导出配置</button>
+                <button onClick={importConfig}>导入配置</button>
+              </div>
+              <div className="export-row">
+                <button onClick={exportImages} disabled={isRendering || isExporting} className="export-btn">
+                  {isExporting ? '导出中...' : '📷 导出图片'}
+                </button>
+                <select 
+                  value={config.exportScale} 
+                  onChange={e => updateConfig('exportScale', +e.target.value)}
+                  className="scale-select"
+                  title="导出倍率"
+                >
+                  <option value={1}>1x</option>
+                  <option value={2}>2x</option>
+                  <option value={3}>3x</option>
+                  <option value={4}>4x</option>
+                </select>
+                <select
+                  value={config.exportFormat}
+                  onChange={e => updateConfig('exportFormat', e.target.value)}
+                  className="scale-select"
+                  title="导出格式"
+                >
+                  <option value="png">PNG</option>
+                  <option value="jpeg">JPEG</option>
+                  <option value="webp">WebP</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {!configCollapsed && <div className="resizer" onMouseDown={handleConfigResize} />}
+
+      {/* Main Content - Editor and Preview split 50/50 */}
+      <div className="main-content">
         <div className="editor-panel">
-          <h3>Markdown 编辑器</h3>
+          <div className="panel-header">
+            <span>Markdown</span>
+          </div>
           <textarea
             value={markdown}
             onChange={(e) => setMarkdown(e.target.value)}
             placeholder="输入 Markdown 内容..."
           />
         </div>
-      </div>
-      <div className="preview-panel">
-        <h3>分页预览 {isRendering && <span className="loading">渲染中...</span>}</h3>
-        <div className="preview-container">
-          <iframe ref={iframeRef} title="preview" />
+
+        <div className="preview-panel">
+          <div className="panel-header">
+            <span>预览</span>
+            {isRendering && <span className="loading">渲染中...</span>}
+          </div>
+          <div className="preview-container">
+            <iframe ref={iframeRef} title="preview" />
+          </div>
         </div>
       </div>
     </div>
