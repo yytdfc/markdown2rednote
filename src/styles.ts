@@ -46,23 +46,30 @@ body {
   align-items: center;
   justify-content: center;
 }
-.cover::before {
-  content: '';
+.cover-line {
   position: absolute;
-  top: 20%;
   left: ${cfg.pageMargin}px;
   right: ${cfg.pageMargin}px;
   height: 2px;
-  background: linear-gradient(90deg, transparent, ${cfg.coverColor}80, transparent);
+  display: flex;
 }
-.cover::after {
+.cover-line::before,
+.cover-line::after {
   content: '';
-  position: absolute;
+  flex: 1;
+  height: 100%;
+}
+.cover-line::before {
+  background: linear-gradient(90deg, transparent, ${cfg.coverColor}80);
+}
+.cover-line::after {
+  background: linear-gradient(90deg, ${cfg.coverColor}80, transparent);
+}
+.cover-line-top {
+  top: 20%;
+}
+.cover-line-bottom {
   top: 80%;
-  left: ${cfg.pageMargin}px;
-  right: ${cfg.pageMargin}px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, ${cfg.coverColor}80, transparent);
 }
 .cover h1 {
   font-family: "${cfg.coverFontFamily}", "Source Han Serif SC VF", "PingFang SC", sans-serif;
@@ -74,22 +81,7 @@ body {
   margin: 0;
   padding: ${cfg.pageMargin * 1.5}px ${cfg.pageMargin}px;
 }
-.cover .quote-left {
-  position: absolute;
-  top: 25%;
-  left: 8%;
-  font-size: ${cfg.coverFontSize * 1.5}px;
-  color: ${cfg.coverColor};
-  opacity: 0.2;
-}
-.cover .quote-right {
-  position: absolute;
-  bottom: 25%;
-  right: 8%;
-  font-size: ${cfg.coverFontSize * 1.5}px;
-  color: ${cfg.coverColor};
-  opacity: 0.2;
-}
+
 h1 { font-size: ${cfg.fontSize * 1.75}px; color: ${cfg.headingColor}; break-after: avoid; margin-top: 0; }
 h2 { font-size: ${cfg.fontSize * 1.375}px; color: ${cfg.headingColor}; break-after: avoid; margin-top: 1.5em; }
 h3 { font-size: ${cfg.fontSize * 1.125}px; color: ${cfg.headingColor}; break-after: avoid; }
@@ -132,7 +124,7 @@ ${
   left: ${cfg.pageMargin}px;
   right: ${cfg.pageMargin}px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, ${cfg.headingColor}60, transparent);
+  background: ${cfg.headingColor}40;
 }
 .pagedjs_page:not(.pagedjs_first_page) .pagedjs_pagebox::before {
   top: ${cfg.pageMargin * 0.7}px;

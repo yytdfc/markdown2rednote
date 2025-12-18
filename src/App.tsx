@@ -17,6 +17,7 @@ function App() {
   const [isRendering, setIsRendering] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [configCollapsed, setConfigCollapsed] = useState(false)
+  const [previewZoom, setPreviewZoom] = useState(100)
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   useEffect(() => {
@@ -32,7 +33,7 @@ function App() {
       let htmlContent = marked.parse(markdown) as string
       htmlContent = htmlContent.replace(
         /<h1>(.*?)<\/h1>/,
-        '<section class="cover"><span class="quote-left">「</span><h1>$1</h1><span class="quote-right">」</span></section>'
+        '<section class="cover"><div class="cover-line cover-line-top"></div><h1>$1</h1><div class="cover-line cover-line-bottom"></div></section>'
       )
       htmlContent = htmlContent.replace(/<hr\s*\/?>/g, '<div class="page-break"></div>')
       const coverEnd = htmlContent.indexOf('</section>') + 10
@@ -67,7 +68,8 @@ function App() {
               display: flex;
               flex-wrap: wrap;
               gap: 20px;
-              justify-content: center;
+              justify-content: flex-start;
+              align-content: flex-start;
             }
             .pagedjs_page {
               background: ${config.bgColor};
@@ -86,6 +88,18 @@ function App() {
               }
             }
             Paged.registerHandlers(PagedHandler);
+            window.addEventListener('message', function(e) {
+              if (e.data && e.data.type === 'zoom') {
+                var zoom = e.data.zoom;
+                var pages = document.querySelectorAll('.pagedjs_page');
+                pages.forEach(function(page) {
+                  page.style.transform = 'scale(' + zoom + ')';
+                  page.style.transformOrigin = 'top left';
+                  page.style.marginRight = ((1 - zoom) * -${config.pageWidth}) + 'px';
+                  page.style.marginBottom = ((1 - zoom) * -${config.pageHeight}) + 'px';
+                });
+              }
+            });
           <\/script>
         </body>
         </html>
@@ -104,6 +118,13 @@ function App() {
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
   }, [])
+
+  useEffect(() => {
+    const iframe = iframeRef.current
+    if (iframe?.contentWindow) {
+      iframe.contentWindow.postMessage({ type: 'zoom', zoom: previewZoom / 100 }, '*')
+    }
+  }, [previewZoom])
 
   const updateConfig = (key: keyof PageConfig, value: string | number | boolean) => {
     setConfig((prev) => ({ ...prev, [key]: value }))
@@ -157,8 +178,18 @@ function App() {
 
     setIsExporting(true)
 
+    // Reset zoom to 100% before export and wait for reflow
+    const pageElements = iframeDoc.querySelectorAll('.pagedjs_page') as NodeListOf<HTMLElement>
+    pageElements.forEach((page) => {
+      page.style.transform = 'none'
+      page.style.marginRight = '0'
+      page.style.marginBottom = '0'
+    })
+    await new Promise((r) => setTimeout(r, 100))
+
     try {
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+      const now = new Date()
+      const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`
 
       // @ts-expect-error File System Access API
       const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' })
@@ -172,7 +203,8 @@ function App() {
           scale: config.exportScale,
           useCORS: true,
           allowTaint: true,
-          backgroundColor: null,
+          backgroundColor: config.bgColor,
+          logging: false,
         })
 
         const mimeType = `image/${config.exportFormat}`
@@ -195,6 +227,15 @@ function App() {
         alert('导出失败，请重试')
       }
     }
+
+    // Restore zoom after export
+    const zoom = previewZoom / 100
+    pageElements.forEach((page) => {
+      page.style.transform = `scale(${zoom})`
+      page.style.transformOrigin = 'top left'
+      page.style.marginRight = `${(1 - zoom) * -config.pageWidth}px`
+      page.style.marginBottom = `${(1 - zoom) * -config.pageHeight}px`
+    })
 
     setIsExporting(false)
   }
@@ -228,6 +269,23 @@ function App() {
             <div className="panel-header">
               <span>预览</span>
               {isRendering && <span className="loading">渲染中...</span>}
+              <div className="zoom-controls">
+                <button
+                  className="zoom-btn"
+                  onClick={() => setPreviewZoom((z) => Math.max(25, z - 25))}
+                  disabled={previewZoom <= 25}
+                >
+                  −
+                </button>
+                <span className="zoom-value">{previewZoom}%</span>
+                <button
+                  className="zoom-btn"
+                  onClick={() => setPreviewZoom((z) => Math.min(200, z + 25))}
+                  disabled={previewZoom >= 200}
+                >
+                  +
+                </button>
+              </div>
             </div>
             <div className="preview-container">
               <iframe ref={iframeRef} title="preview" />

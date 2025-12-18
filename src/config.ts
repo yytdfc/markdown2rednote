@@ -1,7 +1,7 @@
 import type { PageConfig, ThemeColors, ThemeName } from './types'
 
 export const themes: Record<ThemeName, ThemeColors> = {
-  light: { bg: '#ffffff', text: '#333333', accent: '#e74c3c', quote: '#666666', headingColor: '#e74c3c', boldColor: '#d35400', codeBg: '#f5f5f5' },
+  light: { bg: '#ffffff', text: '#333333', accent: '#e74c3c', quote: '#666666', headingColor: '#e74c3c', boldColor: '#c0392b', codeBg: '#f5f5f5' },
   cream: { bg: '#FFFEF5', text: '#1a1a1a', accent: '#e74c3c', quote: '#666666', headingColor: '#c0392b', boldColor: '#e67e22', codeBg: '#f5f0e6' },
   paper: { bg: '#F9F6F2', text: '#2d2d2d', accent: '#d35400', quote: '#777777', headingColor: '#c0392b', boldColor: '#e74c3c', codeBg: '#efe9e1' },
   dark: { bg: '#1a1a2e', text: '#eaeaea', accent: '#ff6b6b', quote: '#aaaaaa', headingColor: '#ff6b6b', boldColor: '#ffa502', codeBg: '#2d2d44' },
@@ -25,25 +25,25 @@ export const fontOptions = [
 ]
 
 export const defaultConfig: PageConfig = {
-  fontFamily: 'PingFang SC',
-  fontSize: 16,
+  fontFamily: 'Source Han Serif SC VF',
+  fontSize: 14,
   lineHeight: 1.8,
-  pageMargin: 40,
-  pageWidth: 400,
+  pageMargin: 30,
+  pageWidth: 360,
   pageHeight: 600,
   theme: 'light',
   textColor: '#333333',
   bgColor: '#ffffff',
-  showPageNumber: false,
-  pageNumberPosition: 'bottom-center',
-  showPageLines: false,
-  coverFontFamily: 'Source Han Serif SC VF',
+  showPageNumber: true,
+  pageNumberPosition: 'bottom-right',
+  showPageLines: true,
+  coverFontFamily: 'Smiley Sans',
   coverFontSize: 36,
   coverColor: '#e74c3c',
   headingColor: '#e74c3c',
-  boldColor: '#d35400',
-  exportScale: 2,
-  exportFormat: 'png',
+  boldColor: '#c0392b',
+  exportScale: 4,
+  exportFormat: 'webp',
 }
 
 export const STORAGE_KEY = 'md-paged-config'
