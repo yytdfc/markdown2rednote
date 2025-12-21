@@ -66,10 +66,10 @@ body {
   background: linear-gradient(90deg, ${cfg.coverColor}80, transparent);
 }
 .cover-line-top {
-  top: 15%;
+  top: 10%;
 }
 .cover-line-bottom {
-  top: 85%;
+  top: 90%;
 }
 .cover h1 {
   font-family: "${cfg.coverFontFamily}", "Source Han Serif SC VF", "PingFang SC", sans-serif;
@@ -116,6 +116,9 @@ code {
 pre code { background: none; padding: 0; }
 a { color: inherit; font-style: italic; text-decoration: underline; pointer-events: none; }
 img { max-width: 100%; height: auto; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+th, td { padding: 8px; border: 1px solid ${cfg.headingColor}40; text-align: center; }
+th { background: ${theme.codeBg}; font-weight: bold; }
 .page-break { break-after: page; }
 ${
   cfg.showPageLines

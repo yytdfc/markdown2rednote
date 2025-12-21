@@ -26,24 +26,27 @@ export const fontOptions = [
 
 export const defaultConfig: PageConfig = {
   fontFamily: 'Source Han Serif SC VF',
-  fontSize: 14,
+  fontSize: 15,
   lineHeight: 1.8,
   pageMargin: 30,
-  pageWidth: 360,
+  pageWidth: 450,
   pageHeight: 600,
   theme: 'light',
   textColor: '#333333',
   bgColor: '#ffffff',
   showPageNumber: true,
   pageNumberPosition: 'bottom-right',
-  showPageLines: true,
+  showPageLines: false,
   coverFontFamily: 'Smiley Sans',
-  coverFontSize: 36,
+  coverFontSize: 55,
   coverColor: '#e74c3c',
   headingColor: '#e74c3c',
   boldColor: '#c0392b',
   exportScale: 4,
   exportFormat: 'webp',
+  showRunningHeader: false,
+  preventWidowsOrphans: true,
+  dropCap: false,
 }
 
 export const STORAGE_KEY = 'md-paged-config'
