@@ -30,4 +30,4 @@ export interface ThemeColors {
   codeBg: string
 }
 
-export type ThemeName = 'light' | 'cream' | 'paper' | 'dark' | 'midnight' | 'sepia' | 'pink' | 'mint' | 'ocean' | 'lavender'
+export type ThemeName = 'light' | 'cream' | 'paper' | 'dark' | 'midnight' | 'sepia' | 'pink' | 'mint' | 'ocean' | 'lavender' | 'honey'

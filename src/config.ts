@@ -11,6 +11,7 @@ export const themes: Record<ThemeName, ThemeColors> = {
   mint: { bg: '#f0fff4', text: '#2d3748', accent: '#38a169', quote: '#718096', headingColor: '#276749', boldColor: '#2f855a', codeBg: '#e0f5e8' },
   ocean: { bg: '#f0f9ff', text: '#1e3a5f', accent: '#0077b6', quote: '#64748b', headingColor: '#0077b6', boldColor: '#00b4d8', codeBg: '#e0f0fa' },
   lavender: { bg: '#faf5ff', text: '#44337a', accent: '#805ad5', quote: '#718096', headingColor: '#6b46c1', boldColor: '#9f7aea', codeBg: '#f0e8fa' },
+  honey: { bg: '#fffdf7', text: '#4a4a4a', accent: '#d4a574', quote: '#8a8a8a', headingColor: '#c08552', boldColor: '#b8860b', codeBg: '#faf6ed' },
 }
 
 export const fontOptions = [

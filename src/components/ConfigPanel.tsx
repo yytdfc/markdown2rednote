@@ -146,6 +146,7 @@ export function ConfigPanel({
                 <option value="mint">薄荷</option>
                 <option value="ocean">海洋</option>
                 <option value="lavender">薰衣草</option>
+                <option value="honey">蜂蜜</option>
               </select>
             </label>
           </div>
