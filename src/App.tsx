@@ -120,11 +120,18 @@ function App() {
 
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
-      if (e.data === 'rendered') setIsRendering(false)
+      if (e.data === 'rendered') {
+        setIsRendering(false)
+        // Re-apply zoom after render completes
+        const iframe = iframeRef.current
+        if (iframe?.contentWindow) {
+          iframe.contentWindow.postMessage({ type: 'zoom', zoom: previewZoom / 100 }, '*')
+        }
+      }
     }
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [])
+  }, [previewZoom])
 
   useEffect(() => {
     const iframe = iframeRef.current
