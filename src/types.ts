@@ -16,6 +16,7 @@ export interface PageConfig {
   coverColor: string
   headingColor: string
   boldColor: string
+  codeBg: string
   exportScale: number
   exportFormat: 'png' | 'jpeg' | 'webp'
 }

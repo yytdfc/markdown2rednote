@@ -43,6 +43,7 @@ export const defaultConfig: PageConfig = {
   coverColor: '#e74c3c',
   headingColor: '#e74c3c',
   boldColor: '#c0392b',
+  codeBg: '#f5f5f5',
   exportScale: 4,
   exportFormat: 'webp',
 }

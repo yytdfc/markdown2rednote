@@ -133,6 +133,7 @@ export function ConfigPanel({
                     headingColor: themeColors.headingColor,
                     boldColor: themeColors.boldColor,
                     coverColor: themeColors.headingColor,
+                    codeBg: themeColors.codeBg,
                   }))
                 }}
               >
@@ -173,6 +174,14 @@ export function ConfigPanel({
                 type="color"
                 value={config.boldColor}
                 onChange={(e) => updateConfig('boldColor', e.target.value)}
+              />
+            </label>
+            <label>
+              代码背景
+              <input
+                type="color"
+                value={config.codeBg}
+                onChange={(e) => updateConfig('codeBg', e.target.value)}
               />
             </label>
           </div>

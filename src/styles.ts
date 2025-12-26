@@ -98,7 +98,7 @@ blockquote {
   break-inside: avoid;
 }
 pre {
-  background: ${theme.codeBg};
+  background: ${cfg.codeBg};
   padding: 16px;
   border-radius: 8px;
   white-space: pre-wrap;
@@ -108,7 +108,7 @@ pre {
 }
 code {
   font-family: 'Monaco', 'Menlo', monospace;
-  background: ${theme.codeBg};
+  background: ${cfg.codeBg};
   padding: 2px 6px;
   border-radius: 4px;
   font-size: ${cfg.fontSize * 0.875}px;
@@ -118,7 +118,7 @@ a { color: inherit; font-style: italic; text-decoration: underline; pointer-even
 img { max-width: 100%; height: auto; }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 th, td { padding: 8px; border: 1px solid ${cfg.headingColor}40; text-align: center; }
-th { background: ${theme.codeBg}; font-weight: bold; }
+th { background: ${cfg.codeBg}; font-weight: bold; }
 .page-break { break-after: page; }
 ${
   cfg.showPageLines
