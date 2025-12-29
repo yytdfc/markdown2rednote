@@ -148,6 +148,13 @@ export function ConfigPanel({
                 <option value="ocean">海洋</option>
                 <option value="lavender">薰衣草</option>
                 <option value="honey">蜂蜜</option>
+                {Object.keys(themes)
+                  .filter((name) => !['light', 'cream', 'paper', 'dark', 'midnight', 'sepia', 'pink', 'mint', 'ocean', 'lavender', 'honey'].includes(name))
+                  .map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
               </select>
             </label>
           </div>

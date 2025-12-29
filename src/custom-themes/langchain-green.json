@@ -1,0 +1,22 @@
+{
+  "fontFamily": "Source Han Serif SC VF",
+  "fontSize": 16,
+  "lineHeight": 1.8,
+  "pageMargin": 30,
+  "pageWidth": 450,
+  "pageHeight": 600,
+  "theme": "ocean",
+  "textColor": "#404141",
+  "bgColor": "#f4f6f6",
+  "showPageNumber": true,
+  "pageNumberPosition": "bottom-right",
+  "showPageLines": false,
+  "coverFontFamily": "Smiley Sans",
+  "coverFontSize": 55,
+  "coverColor": "#1c3c3c",
+  "headingColor": "#1c3c3c",
+  "boldColor": "#2f6869",
+  "codeBg": "#f0f1f1",
+  "exportScale": 4,
+  "exportFormat": "webp"
+}

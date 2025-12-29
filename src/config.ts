@@ -1,6 +1,6 @@
-import type { PageConfig, ThemeColors, ThemeName } from './types'
+import type { PageConfig, ThemeColors, BuiltinThemeName } from './types'
 
-export const themes: Record<ThemeName, ThemeColors> = {
+export const builtinThemes: Record<BuiltinThemeName, ThemeColors> = {
   light: { bg: '#ffffff', text: '#333333', accent: '#e74c3c', quote: '#666666', headingColor: '#e74c3c', boldColor: '#c0392b', codeBg: '#f5f5f5' },
   cream: { bg: '#FFFEF5', text: '#1a1a1a', accent: '#e74c3c', quote: '#666666', headingColor: '#c0392b', boldColor: '#e67e22', codeBg: '#f5f0e6' },
   paper: { bg: '#F9F6F2', text: '#2d2d2d', accent: '#d35400', quote: '#777777', headingColor: '#c0392b', boldColor: '#e74c3c', codeBg: '#efe9e1' },
@@ -13,6 +13,29 @@ export const themes: Record<ThemeName, ThemeColors> = {
   lavender: { bg: '#faf5ff', text: '#44337a', accent: '#805ad5', quote: '#718096', headingColor: '#6b46c1', boldColor: '#9f7aea', codeBg: '#f0e8fa' },
   honey: { bg: '#fffdf7', text: '#4a4a4a', accent: '#d4a574', quote: '#8a8a8a', headingColor: '#c08552', boldColor: '#b8860b', codeBg: '#faf6ed' },
 }
+
+const customThemeModules = import.meta.glob<{ default: ThemeColors | PageConfig }>('./custom-themes/*.json', { eager: true })
+const customThemes: Record<string, ThemeColors> = {}
+for (const path in customThemeModules) {
+  const name = path.replace('./custom-themes/', '').replace('.json', '')
+  const data = customThemeModules[path].default
+  if ('bg' in data) {
+    customThemes[name] = data as ThemeColors
+  } else {
+    const cfg = data as PageConfig
+    customThemes[name] = {
+      bg: cfg.bgColor,
+      text: cfg.textColor,
+      accent: cfg.headingColor,
+      quote: '#666666',
+      headingColor: cfg.headingColor,
+      boldColor: cfg.boldColor,
+      codeBg: cfg.codeBg,
+    }
+  }
+}
+
+export const themes: Record<string, ThemeColors> = { ...builtinThemes, ...customThemes }
 
 export const fontOptions = [
   'PingFang SC',
